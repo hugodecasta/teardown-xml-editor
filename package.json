@@ -1,0 +1,25 @@
+{
+  "name": "teardown-xml-editor",
+  "version": "0.1.0",
+  "description": "Teardown GAME XML graphical editor",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hugodecasta/teardown-xml-editor.git"
+  },
+  "keywords": [
+    "Teardown",
+    "game",
+    "voxel",
+    "xml"
+  ],
+  "author": "Hugo Castaneda",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hugodecasta/teardown-xml-editor/issues"
+  },
+  "homepage": "https://github.com/hugodecasta/teardown-xml-editor#readme",
+  "devDependencies": {},
+  "dependencies": {}
+}

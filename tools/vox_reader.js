@@ -92,8 +92,8 @@ let type_transfer = {
     'voxel': (data) => {
         return {
             x: parse_value('int', data, 1),
-            y: parse_value('int', data, 1),
             z: parse_value('int', data, 1),
+            y: parse_value('int', data, 1),
             i: parse_value('int', data, 1)
         }
     },

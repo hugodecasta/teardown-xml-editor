@@ -21,15 +21,12 @@ function vox_to_json(raw_file_content) {
     let world_node = parse_node(0, node_map)
 
     // ---- PALETTE
-    let IMAP = chunks.filter(c => c.chunk_id == 'IMAP')[0].content
-    let RGBA = chunks.filter(c => c.chunk_id == 'RGBA')[0].content
-    let palette = IMAP.map((index) => RGBA[index - 1])
+    let palette = chunks.filter(c => c.chunk_id == 'RGBA')[0].content
 
     // ---- MODELS
     let models = chunks.filter(c => ['SIZE', 'XYZI']).reduce((models, chunk) => {
         if (chunk.chunk_id == 'SIZE') return models.concat({ size: chunk.content })
         else if (chunk.chunk_id == 'XYZI') models[models.length - 1].voxels = chunk.content
-        models[models.length - 1].voxels.forEach(voxel => voxel.i = IMAP[voxel.i])
         return models
     }, [])
 
@@ -37,6 +34,7 @@ function vox_to_json(raw_file_content) {
     return {
         palette,
         models,
+        node_map,
         world_node
     }
 }

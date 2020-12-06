@@ -1,0 +1,59 @@
+<!--
+This is the Create Custom level file. It sets the size of the level, what environment to use and all objects, such as vox-models, scripts and boundary, used in the level.
+Positions are given in meters relative to their parent objects position. In this level no objects are parented and hence positions are in reference to the bottom center of the game world.
+Voxbox sizes are given in voxels. One voxel is 0.1 meters on all sides.
+This level contains a plain voxbox as indestructible ground and an empty vox file. Open the vox file in MagicaVoxel and create something, then load this level from the Create menu to see your creation in the game.
+-->
+
+<!--
+The 'version' indicates what version of the editor was used to create the level. Leave it as is to make sure scripts are loaded as expected.
+The 'shadowVolume' property sets the area of the game where lighting, and subsequently shadows, are calculated. It is expressed in meters; width, height, length
+-->
+<scene version="3" shadowVolume="200 100 200">
+	<!-- 
+	This sets the environment used for the level.
+	The 'template' property references a predefined setup of environments. Available environment templates are: 'sunny', 'night', 'sunset', 'sunrise', 'foggy', and 'rain'
+	-->
+	<environment template="sunset"/>
+	<body>
+		<!-- 
+		A voxbox is a basic box shape. By default it is indestructible.
+		The 'pos' property sets the position of the box's top-upper-left corner relative to the bottom center of the game world, in meters. 
+		The 'size' property sets the size of the box in voxels as; width, height, and length. 
+		-->
+		<voxbox pos="-100.0 -0.1 -100.0" size="2000 1 2000"/>
+	</body>
+
+	<body>
+		<vox name="tower" pos="0 0 3" rot="0 0 0" file="LEVEL/palette.vox" object="cage" prop="true"/>
+		<vox name="tower" pos="0.1 0 2.9" rot="0 0 0" file="LEVEL/palette.vox" object="inside" prop="true"/>
+		<vox name="tower" pos="0 0.1 2.5" rot="0 0 0" file="LEVEL/palette.vox" object="door" prop="true"/>
+		<joint pos="0.6 0.5 2.5" rot="0 0 0" size="0.1" type="ball" rotstrength="0"/>
+		<joint pos="0.6 1.8 2.5" rot="0 0 0" size="0.1" type="ball" rotstrength="0"/>
+		<joint pos="0.6 0.1 2.9" rot="0 0 0" size="0.1" type="ball" rotstrength="0"/>
+		<joint pos="-0.5 0.1 2.9" rot="0 0 0" size="0.1" type="ball" rotstrength="0"/>
+		<joint pos="0 2 3" rot="0 0 0" size="0.1" type="ball" rotstrength="0">
+			<voxbox pos="-0.05 -0.05 -0.05" name="jvb" color="1 0 0" size="1 1 1" prop="true" collide="false"/>
+		</joint>
+	</body>
+
+	<!-- 
+	The boundary is the orange grid which the player can not pass through. It is defined by a number of vertices.
+	-->
+	<boundary>
+		<!-- 
+		These vertices defines the boundary of the game level.
+		The 'pos' property sets the position of the vertex relative to the bottom center of the game world, in meters. As the boundary has infinite height the positions are only given relative to width and length, without height.
+		-->
+		<vertex pos="-100.0 -100.0"/>
+		<vertex pos="100.0 -100.0"/>
+		<vertex pos="100.0 100.0"/>
+		<vertex pos="-100.0 100.0"/>
+	</boundary>
+
+	<!-- 
+	This loads and runs the referenced script when the level starts.
+	The 'file' property is the reference to which script should be loaded and run. Since this file reference is not preceded by 'LEVEL/' it is loaded from the 'data/script' folder in the installation folder.
+	-->
+	<script file="../../data/script/main.lua"/>
+</scene>
