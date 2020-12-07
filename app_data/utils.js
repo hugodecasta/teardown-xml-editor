@@ -35,3 +35,24 @@ function load_vue_components(comp_names) {
     }
     return components
 }
+
+const THREE = require("three-full")
+
+const {
+    Scene,
+    MOUSE,
+    OrbitControls,
+    PerspectiveCamera,
+    WebGLRenderer,
+    Color,
+    FogExp2,
+    CylinderBufferGeometry,
+    MeshPhongMaterial,
+    Mesh,
+    DirectionalLight,
+    AmbientLight,
+    LineBasicMaterial,
+    Geometry,
+    Vector3,
+    Line,
+} = THREE;
