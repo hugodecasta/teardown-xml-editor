@@ -1,3 +1,5 @@
+const vox_to_json = require('./vox_to_json')
+
 function iter(nb, func) {
     return Array.from(new Array(nb)).map((_, index) => func(index))
 }
@@ -153,4 +155,4 @@ function parse_value(type, data, ...params) {
     return type_transfer[type](data, ...params)
 }
 
-module.exports = (file_data) => parse_value('vox_file', Array.from(file_data))
+module.exports = (file_data) => vox_to_json(parse_value('vox_file', Array.from(file_data)))

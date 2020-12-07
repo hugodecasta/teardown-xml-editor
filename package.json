@@ -21,5 +21,7 @@
   },
   "homepage": "https://github.com/hugodecasta/teardown-xml-editor#readme",
   "devDependencies": {},
-  "dependencies": {}
+  "dependencies": {
+    "jstoxml": "^2.0.2"
+  }
 }
