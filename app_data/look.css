@@ -1,0 +1,51 @@
+/* -------------------------------------------- MAIN LAYOUT */
+
+body {
+    font-family: 'Roboto', sans-serif;
+    color:#282828;
+}
+
+footer {
+    position: fixed;
+    bottom: 0px;
+    width: 100%;
+    text-align: center;
+    left: 0px;
+    font-style: italic;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.btn .material-icons,
+a .material-icons {
+    margin: -15px;
+    margin-left: 0px;
+    margin-right: 0px;
+    top: 5px;
+    position: relative;
+}
+
+.toasted {
+    position: fixed;
+    z-index: 100000;
+    padding:20px 50px;
+    font-size: 20px;
+    color:#fff;
+    background: #282828;
+    top:0px;
+    left:20px;
+    animation:toasted 0.5s;
+}
+.toasted.disapear {
+    animation:untoasted 0.5s;
+}
+
+@keyframes toasted {
+    0%{top:-100px;opacity:0}
+    100%{top:0px;opacity:1}
+}
+
+@keyframes untoasted {
+    0%{top:0px;opacity:1}
+    100%{top:-100px;opacity:0}
+}

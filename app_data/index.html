@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+
+<!-- ---------------------------------------------------------------------- HEAD -->
+
+<head>
+
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+    <link rel='stylesheet' href='look.css'>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/http-vue-loader"></script>
+
+    <title>TD XML Editor</title>
+
+</head>
+
+<!-- ---------------------------------------------------------------------- BODY -->
+
+<body>
+
+    <!-- --------------------------------------------- HTML APP -->
+
+    <div id='app'>
+        <index></index>
+    </div>
+
+    <!-- --------------------------------------------- SCRIPTS -->
+
+    <script src="utils.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            components: load_vue_components(['index']),
+        })
+    </script>
+
+    <!-- --------------------------------------------- -->
+</body>
+
+<!-- ---------------------------------------------------------------------- -->
+
+</html>

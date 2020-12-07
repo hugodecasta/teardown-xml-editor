@@ -2,8 +2,10 @@
   "name": "teardown-xml-editor",
   "version": "0.1.0",
   "description": "Teardown GAME XML graphical editor",
-  "main": "index.js",
-  "scripts": {},
+  "main": "app.js",
+  "scripts": {
+    "start": "electron ."
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hugodecasta/teardown-xml-editor.git"
@@ -20,7 +22,9 @@
     "url": "https://github.com/hugodecasta/teardown-xml-editor/issues"
   },
   "homepage": "https://github.com/hugodecasta/teardown-xml-editor#readme",
-  "devDependencies": {},
+  "devDependencies": {
+    "electron": "^11.0.3"
+  },
   "dependencies": {
     "jstoxml": "^2.0.2"
   }
