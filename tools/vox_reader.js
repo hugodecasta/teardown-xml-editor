@@ -158,14 +158,18 @@ function parse_value(type, data, ...params) {
 module.exports = (file_data) => {
     let vox_json = vox_to_json(parse_value('vox_file', Array.from(file_data)))
     let { node_map, models } = vox_json
-    vox_json.objects = Object.values(node_map).filter(node => node.node_type == 'nSHP').map(node => {
+    vox_json.objects = {}
+    Object.values(node_map).filter(node => node.node_type == 'nSHP').forEach(node => {
         let parent = node_map[node.parent_id]
         let name = parent.node_attrs._name
         let mode_size = models[node.models[0].model_id].size
         let [x, y, z] = parent.frames[0]._t.split(' ').map(cor => parseInt(cor))
         z -= Math.trunc(mode_size.sz / 2)
         let position = { x, y, z }
-        return { name, mode_size, position }
+        let object = { name, mode_size, position }
+        vox_json.objects[name] = object
+        return object
     })
+
     return vox_json
 }

@@ -109,19 +109,19 @@ export default {
             // return node;
         },
         handle_load_files() {
-            this.loaded_files
-                .filter((file_name) => !(file_name in this.file_models))
-                .forEach((file_name) => {
-                    this.file_models[file_name] = [];
-                    this.load_vox_file(file_name).models.forEach(
-                        (model, index) => {
-                            if (index > 0) return;
-                            this.file_models[file_name].push(
-                                this.create_voxel_geometry(model)
-                            );
-                        }
-                    );
-                });
+            // this.loaded_files
+            //     .filter((file_name) => !(file_name in this.file_models))
+            //     .forEach((file_name) => {
+            //         this.file_models[file_name] = [];
+            //         this.load_vox_file(file_name).models.forEach(
+            //             (model, index) => {
+            //                 if (index > 0) return;
+            //                 this.file_models[file_name].push(
+            //                     this.create_voxel_geometry(model)
+            //                 );
+            //             }
+            //         );
+            //     });
         },
     },
     watch: {

@@ -37,7 +37,7 @@ export default {
     ]),
     // --------------------------------------------------------------- DATA
     data: () => ({
-        loaded_files: ["align_test.vox"],
+        loaded_files: {},
         // ----------------------------------------------- TEMPLATES
         templates: {
             vox: {
@@ -98,13 +98,14 @@ export default {
             parent.content.push(node);
         },
         put_file(file_path) {
-            let file_data = vox_reader(fs.readFileSync(file_path));
+            let file_name = file_path.replace(/\\/g, "/").split("/").pop();
+            let file_data =
+                this.loaded_files[file_name] ??
+                vox_reader(fs.readFileSync(file_path));
             let file_node = this.create_node("group");
-            file_node.props.name = file_path
-                .replace(/\\/g, "/")
-                .split("/")
-                .pop();
-            file_data.objects.map((object) => {
+            this.loaded_files[file_name] = file_data;
+            file_node.props.name = file_name;
+            Object.values(file_data.objects).map((object) => {
                 let sub_node = this.create_node("vox");
                 sub_node.props.name = object.name;
                 sub_node.props.pos = Object.values(object.position);
@@ -194,8 +195,16 @@ export default {
                     let fileasker = document.createElement("input");
                     fileasker.setAttribute("type", "file");
                     fileasker.click();
-                    fileasker.onchange = (files) => {
-                        let path = fileasker.files[0].path;
+                    fileasker.onchange = () => {
+                        let file = fileasker.files[0];
+                        if (!file) return;
+                        let path = file.path;
+                        if (!path.includes(this.vox_dir)) {
+                            alert(
+                                "you must select a vox file inside the vox directory"
+                            );
+                            return setTimeout(() => fileasker.click(), 0);
+                        }
                         this.put_file(path);
                     };
                 },
