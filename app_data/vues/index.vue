@@ -87,12 +87,32 @@ export default {
     // --------------------------------------------------------------- METHODS
     methods: {
         put_node(sub_node) {
-            if (!this.selected_node || this.selected_node.content == null)
-                return;
-            sub_node.parent_id = this.selected_node.id;
-            this.node_map[sub_node.id] = sub_node;
-            this.selected_node.content.push(sub_node);
+            if (!this.selected_node) return;
+            this.add_node_to(sub_node, this.selected_node);
             this.track_data.selected_nodes = [sub_node.id];
+        },
+        add_node_to(node, parent) {
+            if (parent.content == null) return;
+            node.parent_id = parent.id;
+            this.node_map[node.id] = node;
+            parent.content.push(node);
+        },
+        put_file(file_path) {
+            let file_data = vox_reader(fs.readFileSync(file_path));
+            let file_node = this.create_node("group");
+            file_node.props.name = file_path
+                .replace(/\\/g, "/")
+                .split("/")
+                .pop();
+            file_data.objects.map((object) => {
+                let sub_node = this.create_node("vox");
+                sub_node.props.name = object.name;
+                sub_node.props.pos = Object.values(object.position);
+                this.add_node_to(sub_node, file_node);
+            });
+            this.put_node(file_node);
+            this.track_data.selected_nodes = [];
+            this.track_data.selected_nodes.push(file_node.id);
         },
         delete_nodes(nodes) {
             for (let node of nodes) {
@@ -129,10 +149,8 @@ export default {
             let vox_data = vox_reader(raw_data);
             return vox_data;
         },
-        import(path) {
+        load_file(path) {
             let data = fs.readFileSync(path);
-            let file = { path, data };
-            this.project_data.xml_file = file;
             this.project_data.nodes = [];
             let base_group = this.create_node("group");
             base_group.props.name = this.project_name;
@@ -141,12 +159,18 @@ export default {
             this.track_data.selected_nodes = [];
             this.track_data.selected_nodes.push(base_group.id);
         },
+        import(path) {
+            let file = { path, data: null };
+            this.project_data.xml_file = file;
+        },
     },
     // --------------------------------------------------------------- WATCH
     watch: {
         "project_data.xml_file": function (file) {
             if (!file) {
                 this.track_data.selected_nodes = [];
+            } else {
+                this.load_file(file.path);
             }
         },
     },
@@ -166,8 +190,14 @@ export default {
             }
             actions["import"] = {
                 icon: "file-download",
-                action: () => {
-                    alert("COUCOU");
+                action: async () => {
+                    let fileasker = document.createElement("input");
+                    fileasker.setAttribute("type", "file");
+                    fileasker.click();
+                    fileasker.onchange = (files) => {
+                        let path = fileasker.files[0].path;
+                        this.put_file(path);
+                    };
                 },
             };
             return actions;
