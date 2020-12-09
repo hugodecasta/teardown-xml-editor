@@ -32,15 +32,17 @@
 
             <props-view :props="node.props"></props-view>
 
-            <v-divider></v-divider>
+            <template v-if='node.parent_id != null'>
+                <v-divider></v-divider>
 
-            <v-btn
-                class='ma-3'
-                color="error"
-                @click='$emit("delete",[node])'
-            >
-                <v-icon left>mdi-delete</v-icon>delete
-            </v-btn>
+                <v-btn
+                    class='ma-3'
+                    color="error"
+                    @click='$emit("delete",[node])'
+                >
+                    <v-icon left>mdi-delete</v-icon>delete
+                </v-btn>
+            </template>
 
         </template>
 

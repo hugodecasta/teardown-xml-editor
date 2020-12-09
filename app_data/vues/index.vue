@@ -89,13 +89,26 @@ export default {
         put_node(sub_node) {
             if (!this.selected_node || this.selected_node.content == null)
                 return;
+            sub_node.parent_id = this.selected_node.id;
             this.node_map[sub_node.id] = sub_node;
             this.selected_node.content.push(sub_node);
             this.track_data.selected_nodes = [sub_node.id];
         },
         delete_nodes(nodes) {
             for (let node of nodes) {
-                // delete this.node_map[node.id];
+                if (node.parent_id == null) continue;
+                if (node.content) this.delete_nodes(node.content);
+                delete this.node_map[node.id];
+                let parent = this.node_map[node.parent_id];
+                let container_index = parent.content.indexOf(node);
+                parent.content.splice(container_index, 1);
+                let selecteds = this.track_data.selected_nodes;
+                let select_index = selecteds.indexOf(node.id);
+                if (select_index > -1) {
+                    selecteds.splice(select_index, 1);
+                    if (!selecteds.includes(node.parent_id))
+                        selecteds.push(node.parent_id);
+                }
             }
         },
         create_node(type) {
