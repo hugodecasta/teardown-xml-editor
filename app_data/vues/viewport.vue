@@ -4,7 +4,13 @@
 
 <script>
 export default {
+    props: ["loaded_files", "load_vox_file"],
     data: () => ({
+        file_models: {},
+        selected_node: null,
+        select_box: null,
+        select_axis: null,
+        debug_meshes: [],
         three: {
             renderer: null,
             camera: null,
@@ -12,6 +18,128 @@ export default {
             scene: null,
         },
     }),
+    methods: {
+        create_voxel_geometry(model) {
+            let { sx, sy, sz } = model.size;
+            // let model_geometry = model.voxels
+            //     .map((voxel) => {
+            //         let { x, y, z } = voxel;
+            //         let coord_arr = [x, y, z];
+            //         let unfree_spaces = model.voxels
+            //             .map((other_voxel) => {
+            //                 if (other_voxel == voxel) return [];
+            //                 let { x: ox, y: oy, z: oz } = other_voxel;
+            //                 let o_coord_arr = [ox, oy, oz];
+            //                 return o_coord_arr.map(
+            //                     (co, index) => coord_arr[index] - co
+            //                 );
+            //             })
+            //             .filter((e) => e)
+            //             .filter(
+            //                 (vox_d) =>
+            //                     vox_d.reduce((a, b) => a + Math.abs(b), 0) == 1
+            //             )
+            //             .reduce(
+            //                 (space_taken, vox_d) => {
+            //                     vox_d.forEach((dif, index) =>
+            //                         space_taken[index].push(dif)
+            //                     );
+            //                     return space_taken;
+            //                 },
+            //                 [[], [], []]
+            //             );
+            //         let free_space = [
+            //             [-1, 1],
+            //             [-1, 1],
+            //             [-1, 1],
+            //         ].map((free, ax) =>
+            //             free.filter((dir) => !unfree_spaces[ax].includes(dir))
+            //         );
+            //         let rotate_axes = Array.from("yxz");
+            //         let axes = Array.from("xyz");
+            //         let voxel_geo = free_space
+            //             .map((ax_free_dirs, ax) => {
+            //                 let rotate_axe = rotate_axes[ax];
+            //                 let axe = axes[ax];
+            //                 let other_axes = axes.filter((ax) => ax != axe);
+            //                 let dir_meshes = ax_free_dirs
+            //                     .map((ax_dir) => {
+            //                         const geo = new THREE.PlaneGeometry(
+            //                             1,
+            //                             1,
+            //                             1
+            //                         );
+            //                         const plane = new THREE.Mesh(geo);
+            //                         plane.position[axe] =
+            //                             voxel[axe] - ax_dir / 2;
+            //                         other_axes.forEach(
+            //                             (oax) =>
+            //                                 (plane.position[oax] = voxel[oax])
+            //                         );
+            //                         plane.rotation[rotate_axe] = Math.PI / 2;
+            //                         return plane;
+            //                     })
+            //                     .reduce((geo, mesh) => {
+            //                         geo.mergeMesh(mesh);
+            //                         return geo;
+            //                     }, new THREE.Geometry());
+            //                 return new THREE.Mesh(dir_meshes);
+            //             })
+            //             .reduce((geo, ax_mesh) => {
+            //                 geo.mergeMesh(ax_mesh);
+            //                 return geo;
+            //             }, new THREE.Geometry());
+            //         return new THREE.Mesh(voxel_geo);
+            //     })
+            //     .reduce((geo, ax_mesh) => {
+            //         geo.mergeMesh(ax_mesh);
+            //         return geo;
+            //     }, new THREE.Geometry());
+
+            // console.log(model_geometry);
+            // const material = new THREE.MeshPhongMaterial({
+            //     color: 0x555555,
+            //     side: THREE.DoubleSide,
+            // });
+            // const mesh = new THREE.Mesh(model_geometry, material);
+            // this.debug_meshes.push(mesh);
+            // this.three.scene.add(mesh);
+            // let node = { mesh, model };
+            // mesh.node = node;
+            // return node;
+        },
+        handle_load_files() {
+            this.loaded_files
+                .filter((file_name) => !(file_name in this.file_models))
+                .forEach((file_name) => {
+                    this.file_models[file_name] = [];
+                    this.load_vox_file(file_name).models.forEach(
+                        (model, index) => {
+                            if (index > 0) return;
+                            this.file_models[file_name].push(
+                                this.create_voxel_geometry(model)
+                            );
+                        }
+                    );
+                });
+        },
+    },
+    watch: {
+        loaded_files(file_array) {
+            this.handle_load_files();
+        },
+        selected_node(node) {
+            if (!node) return (this.select_box.material.opacity = 0);
+            let { sx, sy, sz } = node.model.size;
+            const sbg = new THREE.BoxGeometry(sx, sz, sy);
+            const sbwg = new THREE.WireframeGeometry(sbg);
+            this.select_box.geometry = sbwg;
+            this.select_box.position.x = sx / 2 - 0.5;
+            this.select_box.position.y = sz / 2 - 0.5;
+            this.select_box.position.z = sy / 2 - 0.5;
+            this.select_box.material.opacity = 0.5;
+        },
+    },
     mounted() {
         let axisLines = [];
 
@@ -33,13 +161,35 @@ export default {
             147.78795155164678
         );
 
+        var raycaster = new THREE.Raycaster();
+        var mouse = new THREE.Vector2();
+        this.three.renderer.domElement.addEventListener("mouseup", (event) => {
+            if (event.button != 0) return;
+            event.preventDefault();
+
+            mouse.x =
+                (event.clientX / this.three.renderer.domElement.clientWidth) *
+                    2 -
+                1;
+            mouse.y =
+                -(event.clientY / this.three.renderer.domElement.clientHeight) *
+                    2 +
+                1;
+
+            raycaster.setFromCamera(mouse, this.three.camera);
+
+            var intersects = raycaster.intersectObjects(this.debug_meshes);
+            let node = intersects[0]?.object.node ?? null;
+            this.selected_node = node;
+        });
+
         // ----------- INIT CONTROLS
 
         this.three.controls = new OrbitControls(
             this.three.camera,
             this.three.renderer.domElement
         );
-        this.three.controls.maxPolarAngle = Math.PI * 0.5;
+        this.three.controls.maxPolarAngle = Math.PI * 0.49;
         this.three.controls.minDistance = 10;
         this.three.controls.maxDistance = 5000;
         this.three.controls.screenSpacePanning = true;
@@ -57,41 +207,16 @@ export default {
         this.three.scene.background = new Color(back_color);
         this.three.scene.fog = new THREE.FogExp2(back_color, 0.003);
 
-        // sky = new THREE.Sky();
-        // sky.scale.setScalar(450000);
-        // this.three.scene.add(sky);
+        // ----------- SELECT BOX
 
-        // const uniforms = sky.material.uniforms;
-        // uniforms["turbidity"].value = 10;
-        // uniforms["rayleigh"].value = 3;
-        // uniforms["mieCoefficient"].value = 0.005;
-        // uniforms["mieDirectionalG"].value = 0.7;
-
-        // let sun = new THREE.Vector3();
-        // const theta = Math.PI * (0.3 - 0.5);
-        // const phi = 2 * Math.PI * (0.25 - 0.5);
-        // sun.x = Math.cos(phi);
-        // sun.y = Math.sin(phi) * Math.sin(theta);
-        // sun.z = Math.sin(phi) * Math.cos(theta);
-        // uniforms["sunPosition"].value.copy(sun);
-
-        // state.scene.fog = new FogExp2(0xcccccc, 0.002);
-        // var geometry = new CylinderBufferGeometry(0, 10, 30, 3, 1);
-        // var material = new MeshPhongMaterial({
-        //     color: 0xffffff,
-        //     flatShading: true,
-        // });
-        // for (var i = 0; i < 500; i++) {
-        //     var mesh = new Mesh(geometry, material);
-        //     mesh.position.x = (Math.random() - 0.5) * 1000;
-        //     mesh.position.y = (Math.random() - 0.5) * 1000;
-        //     mesh.position.z = (Math.random() - 0.5) * 1000;
-        //     mesh.updateMatrix();
-        //     mesh.matrixAutoUpdate = false;
-        //     state.pyramids.push(mesh);
-        // }
-        // state.scene.add(...state.pyramids);
-        // lights
+        const sbg = new THREE.BoxGeometry(10, 10, 10);
+        const sbwg = new THREE.WireframeGeometry(sbg);
+        let sb_mesh = new THREE.LineSegments(sbwg);
+        sb_mesh.material.depthTest = false;
+        sb_mesh.material.opacity = 0;
+        sb_mesh.material.transparent = true;
+        this.select_box = sb_mesh;
+        this.three.scene.add(sb_mesh);
 
         // ----------- REFERENCE PLANE
 
@@ -140,32 +265,8 @@ export default {
         lightB.position.set(-1, -1, -1);
         this.three.scene.add(lightB);
         let lightC = new AmbientLight(0x222222);
+        lightC.position.set(-1, 1, -1);
         this.three.scene.add(lightC);
-
-        // ----------- AXIS
-
-        // // Axis Line 1
-        // var materialB = new LineBasicMaterial({ color: 0x0000ff });
-        // var geometryB = new Geometry();
-        // geometryB.vertices.push(new Vector3(0, 0, 0));
-        // geometryB.vertices.push(new Vector3(0, 1000, 0));
-        // var lineA = new Line(geometryB, materialB);
-        // axisLines.push(lineA);
-        // // Axis Line 2
-        // var materialC = new LineBasicMaterial({ color: 0x00ff00 });
-        // var geometryC = new Geometry();
-        // geometryC.vertices.push(new Vector3(0, 0, 0));
-        // geometryC.vertices.push(new Vector3(1000, 0, 0));
-        // var lineB = new Line(geometryC, materialC);
-        // axisLines.push(lineB);
-        // // Axis 3
-        // var materialD = new LineBasicMaterial({ color: 0xff0000 });
-        // var geometryD = new Geometry();
-        // geometryD.vertices.push(new Vector3(0, 0, 0));
-        // geometryD.vertices.push(new Vector3(0, 0, 1000));
-        // var lineC = new Line(geometryD, materialD);
-        // axisLines.push(lineC);
-        // this.three.scene.add(...axisLines);
 
         // ----------- RENDER UPDATE
 
@@ -190,6 +291,8 @@ export default {
         };
 
         animate();
+
+        this.handle_load_files();
     },
 };
 </script>

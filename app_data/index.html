@@ -45,7 +45,20 @@
         var app = new Vue({
             el: '#app',
             vuetify: new Vuetify({
-                theme: { dark: true }
+                theme: {
+                    dark: true,
+                    themes: {
+                        dark: {
+                            primary: '#EA7600',
+                            secondary: '#236192',
+                            accent: '#82B1FF',
+                            error: '#FF5252',
+                            info: '#363636',
+                            success: '#4CAF50',
+                            warning: '#FFC107',
+                        }
+                    }
+                },
             }),
             components: load_vue_components(['index']),
         })

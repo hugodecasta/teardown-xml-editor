@@ -20,12 +20,13 @@ function get_all_vues() {
     return read_dir_rec(vues_dir)
 }
 
+
 httpVueLoader.httpRequest = function (file) {
     let vues = get_all_vues()
     file = file.replace('.vue', '')
     let path = vues[file]
     let file_data = fs.readFileSync(path, 'UTF8').replace('export default', 'module.exports =')
-    return new Promise(ok => ok(file_data))
+    return Promise.resolve(file_data)
 }
 
 function load_vue_components(comp_names) {
@@ -37,6 +38,14 @@ function load_vue_components(comp_names) {
 }
 
 const THREE = require("three-full")
+
+const vox_reader = require('../tools/vox_reader')
+
+const uuid = require('uuid').v4
+
+function clone(obj) {
+    return JSON.parse(JSON.stringify(obj))
+}
 
 const {
     Scene,

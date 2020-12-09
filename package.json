@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "jstoxml": "^2.0.2",
-    "three-full": "^28.0.2"
+    "three-full": "^28.0.2",
+    "uuid": "^8.3.1"
   }
 }
