@@ -36,7 +36,7 @@ let type_transfer = {
         return parse_value('dict', data, ['STRING', 'STRING'])
     },
     'chunk_id_SIZE': (data) => {
-        return { sx: parse_value('int', data), sy: parse_value('int', data), sz: parse_value('int', data) }
+        return { sz: parse_value('int', data), sx: parse_value('int', data), sy: parse_value('int', data) }
     },
     'chunk_id_nTRN': (data) => {
         let node_id = parse_value('int', data)
@@ -93,8 +93,8 @@ let type_transfer = {
     },
     'voxel': (data) => {
         return {
-            x: parse_value('int', data, 1),
             z: parse_value('int', data, 1),
+            x: parse_value('int', data, 1),
             y: parse_value('int', data, 1),
             i: parse_value('int', data, 1)
         }
@@ -162,11 +162,11 @@ module.exports = (file_data) => {
     Object.values(node_map).filter(node => node.node_type == 'nSHP').forEach(node => {
         let parent = node_map[node.parent_id]
         let name = parent.node_attrs._name
-        let mode_size = models[node.models[0].model_id].size
-        let [x, y, z] = parent.frames[0]._t.split(' ').map(cor => parseInt(cor))
-        z -= Math.trunc(mode_size.sz / 2)
+        let model_id = node.models[0].model_id
+        let [x, y, z] = (parent.frames[0]?._t ?? '0 0 0').split(' ').map(cor => parseInt(cor))
+        z -= Math.trunc(models[model_id].size.sy / 2)
         let position = { x, y, z }
-        let object = { name, mode_size, position }
+        let object = { name, model_id, position }
         vox_json.objects[name] = object
         return object
     })

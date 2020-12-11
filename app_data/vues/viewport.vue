@@ -1,172 +1,316 @@
 <template>
-    <div id='viewport'></div>
+    <div id='viewport'>
+        <div style='position:fixed;left:400px;bottom:20px;'>
+            <v-btn @click='three.axis.setMode("translate");'>
+                <v-icon>mdi-axis-arrow</v-icon>
+            </v-btn>
+            <v-btn
+                @click='three.axis.setMode("rotate");'
+                :disabled='selected_node && !("rot" in selected_node.props)'
+            >
+                <v-icon>mdi-rotate-orbit</v-icon>
+            </v-btn>
+        </div>
+    </div>
 </template>
 
 <script>
 export default {
-    props: ["loaded_files", "load_vox_file"],
+    props: ["loaded_files", "track_data", "node_map"],
     data: () => ({
-        file_models: {},
-        selected_node: null,
         select_box: null,
-        select_axis: null,
-        debug_meshes: [],
+        node_3d_data: {},
+        joint_mesh: null,
+        selected_mat: null,
         three: {
             renderer: null,
-            camera: null,
-            controls: null,
             scene: null,
+            camera: null,
         },
     }),
     methods: {
-        create_voxel_geometry(model) {
+        create_color: (r, g, b) => r * 256 * 256 + g * 256 + b,
+        create_mat_palette(file_data) {
+            this.selected_mat = new THREE.MeshBasicMaterial({
+                color: 0xea7600,
+                depthTest: false,
+                transparent: true,
+                opacity: 0.5,
+                side: THREE.DoubleSide,
+            });
+            file_data.mat_palette = file_data.palette.map(({ r, g, b }) => {
+                return new THREE.MeshPhongMaterial({
+                    color: this.create_color(r, g, b),
+                    depthTest: true,
+                    side: THREE.DoubleSide,
+                });
+            });
+        },
+        create_model_base_mesh(model, mat_palette) {
             let { sx, sy, sz } = model.size;
-            // let model_geometry = model.voxels
-            //     .map((voxel) => {
-            //         let { x, y, z } = voxel;
-            //         let coord_arr = [x, y, z];
-            //         let unfree_spaces = model.voxels
-            //             .map((other_voxel) => {
-            //                 if (other_voxel == voxel) return [];
-            //                 let { x: ox, y: oy, z: oz } = other_voxel;
-            //                 let o_coord_arr = [ox, oy, oz];
-            //                 return o_coord_arr.map(
-            //                     (co, index) => coord_arr[index] - co
-            //                 );
-            //             })
-            //             .filter((e) => e)
-            //             .filter(
-            //                 (vox_d) =>
-            //                     vox_d.reduce((a, b) => a + Math.abs(b), 0) == 1
-            //             )
-            //             .reduce(
-            //                 (space_taken, vox_d) => {
-            //                     vox_d.forEach((dif, index) =>
-            //                         space_taken[index].push(dif)
-            //                     );
-            //                     return space_taken;
-            //                 },
-            //                 [[], [], []]
-            //             );
-            //         let free_space = [
-            //             [-1, 1],
-            //             [-1, 1],
-            //             [-1, 1],
-            //         ].map((free, ax) =>
-            //             free.filter((dir) => !unfree_spaces[ax].includes(dir))
-            //         );
-            //         let rotate_axes = Array.from("yxz");
-            //         let axes = Array.from("xyz");
-            //         let voxel_geo = free_space
-            //             .map((ax_free_dirs, ax) => {
-            //                 let rotate_axe = rotate_axes[ax];
-            //                 let axe = axes[ax];
-            //                 let other_axes = axes.filter((ax) => ax != axe);
-            //                 let dir_meshes = ax_free_dirs
-            //                     .map((ax_dir) => {
-            //                         const geo = new THREE.PlaneGeometry(
-            //                             1,
-            //                             1,
-            //                             1
-            //                         );
-            //                         const plane = new THREE.Mesh(geo);
-            //                         plane.position[axe] =
-            //                             voxel[axe] - ax_dir / 2;
-            //                         other_axes.forEach(
-            //                             (oax) =>
-            //                                 (plane.position[oax] = voxel[oax])
-            //                         );
-            //                         plane.rotation[rotate_axe] = Math.PI / 2;
-            //                         return plane;
-            //                     })
-            //                     .reduce((geo, mesh) => {
-            //                         geo.mergeMesh(mesh);
-            //                         return geo;
-            //                     }, new THREE.Geometry());
-            //                 return new THREE.Mesh(dir_meshes);
-            //             })
-            //             .reduce((geo, ax_mesh) => {
-            //                 geo.mergeMesh(ax_mesh);
-            //                 return geo;
-            //             }, new THREE.Geometry());
-            //         return new THREE.Mesh(voxel_geo);
-            //     })
-            //     .reduce((geo, ax_mesh) => {
-            //         geo.mergeMesh(ax_mesh);
-            //         return geo;
-            //     }, new THREE.Geometry());
+            let model_geometry = new THREE.Geometry();
+            let offsets = [
+                0.5 - Math.trunc(sx / 2),
+                0.5 - Math.trunc(sz / 2),
+                0.5,
+            ];
+            model.voxels.forEach((voxel) => {
+                let { x, y, z } = voxel;
+                let coord_arr = [x, y, z];
+                let unfree_spaces = model.voxels
+                    .map((other_voxel) => {
+                        if (other_voxel == voxel) return [];
+                        let { x: ox, y: oy, z: oz } = other_voxel;
+                        let o_coord_arr = [ox, oy, oz];
+                        return o_coord_arr.map(
+                            (co, index) => coord_arr[index] - co
+                        );
+                    })
+                    .filter((e) => e)
+                    .filter(
+                        (vox_d) =>
+                            vox_d.reduce((a, b) => a + Math.abs(b), 0) == 1
+                    )
+                    .reduce(
+                        (space_taken, vox_d) => {
+                            vox_d.forEach((dif, index) =>
+                                space_taken[index].push(dif)
+                            );
+                            return space_taken;
+                        },
+                        [[], [], []]
+                    );
+                let free_space = [
+                    [-1, 1],
+                    [-1, 1],
+                    [-1, 1],
+                ].map((free, ax) =>
+                    free.filter((dir) => !unfree_spaces[ax].includes(dir))
+                );
+                let axes = Array.from("xyz");
+                let rotate_axes = Array.from("yxz");
+                let voxel_geo = free_space.map((ax_free_dirs, ax) => {
+                    let axe = axes[ax];
+                    let rotate_axe = rotate_axes[ax];
+                    let other_axes = axes.filter((ax) => ax != axe);
 
-            // console.log(model_geometry);
-            // const material = new THREE.MeshPhongMaterial({
-            //     color: 0x555555,
-            //     side: THREE.DoubleSide,
-            // });
-            // const mesh = new THREE.Mesh(model_geometry, material);
-            // this.debug_meshes.push(mesh);
-            // this.three.scene.add(mesh);
-            // let node = { mesh, model };
-            // mesh.node = node;
-            // return node;
+                    ax_free_dirs.forEach((ax_dir) => {
+                        const geo = new THREE.PlaneGeometry(1, 1, 1);
+                        const plane = new THREE.Mesh(geo);
+                        plane.position[axe] = voxel[axe] - ax_dir / 2;
+                        other_axes.forEach(
+                            (oax, index) => (plane.position[oax] = voxel[oax])
+                        );
+                        plane.rotation[rotate_axe] = Math.PI / 2;
+                        plane.updateMatrix();
+                        plane.position.x += 0.5 - Math.trunc(sx / 2);
+                        plane.position.z += 0.5 - Math.trunc(sz / 2);
+                        plane.position.y += 0.5;
+                        plane.updateMatrix();
+
+                        model_geometry.merge(
+                            plane.geometry,
+                            plane.matrix,
+                            voxel.i - 1
+                        );
+                    });
+                });
+            });
+
+            let mode_base_mesh = new THREE.Mesh(model_geometry, mat_palette);
+            return mode_base_mesh;
         },
         handle_load_files() {
-            // this.loaded_files
-            //     .filter((file_name) => !(file_name in this.file_models))
-            //     .forEach((file_name) => {
-            //         this.file_models[file_name] = [];
-            //         this.load_vox_file(file_name).models.forEach(
-            //             (model, index) => {
-            //                 if (index > 0) return;
-            //                 this.file_models[file_name].push(
-            //                     this.create_voxel_geometry(model)
-            //                 );
-            //             }
-            //         );
-            //     });
+            Object.values(this.loaded_files).forEach((file_data) => {
+                let { models, palette, mat_palette } = file_data;
+                if (!mat_palette) this.create_mat_palette(file_data);
+                models.forEach(
+                    (model) =>
+                        (model.base_mesh ||= this.create_model_base_mesh(
+                            model,
+                            file_data.mat_palette
+                        ))
+                );
+            });
+        },
+        add_to_group(group, sub) {
+            let { x, y, z } = group.position;
+            group.position = new THREE.Vector3(0, 0, 0);
+            group.add(sub);
+            sub.parent = group;
+            group.position = new THREE.Vector3(x, y, z);
+        },
+        remove_from_parent(object) {
+            if (object.parent) object.parent.remove(object);
+        },
+        handle_node_map() {
+            let removing_3d_node = [];
+            Object.values(this.node_3d_data).forEach((node_3d) => {
+                if (
+                    !Object.values(this.node_map)
+                        .map((real_node) => real_node.id)
+                        .includes(node_3d.id)
+                ) {
+                    removing_3d_node.push(node_3d.id);
+                    let { group, mesh } = node_3d;
+                    if (mesh) this.remove_from_parent(mesh);
+                    this.remove_from_parent(group);
+                }
+            });
+            removing_3d_node.forEach((id) => delete this.node_3d_data[id]);
+            Object.values(this.node_map).forEach((node) => {
+                let { type, props, id, parent_id } = node;
+                if (!this.node_3d_data[id]) this.node_3d_data[id] = { id };
+                let node_3d = this.node_3d_data[id];
+                let { group } = node_3d;
+                if (!group) {
+                    node_3d.base_node = node;
+                    group = new THREE.Group();
+                    group.base_node = node;
+                    node_3d.group = group;
+                    if (node.content) {
+                        node.content.forEach((child) => {
+                            let child_3d = this.node_3d_data[child.id];
+                            if (!child_3d) return;
+                            if (child_3d.group)
+                                this.add_to_group(
+                                    node_3d.group,
+                                    child_3d.group
+                                );
+                        });
+                    }
+                    if (
+                        parent_id &&
+                        this.node_3d_data[parent_id] &&
+                        this.node_3d_data[parent_id].group
+                    ) {
+                        let parent_3d = this.node_3d_data[parent_id];
+                        this.add_to_group(parent_3d.group, node_3d.group);
+                    } else if (!parent_id) {
+                        this.add_to_group(this.three.scene, group);
+                    }
+                }
+                if (type == "vox") {
+                    let { mesh } = node_3d;
+                    if (!mesh) {
+                        let object_name = props["object name"];
+                        let file_name = props["file name"];
+                        let file_data = this.loaded_files[file_name];
+                        let model_id = file_data.objects[object_name].model_id;
+                        let model = file_data.models[model_id];
+                        let model_mesh = model.base_mesh;
+                        mesh = model_mesh.clone();
+                        node_3d.mesh = mesh;
+                        let outline_mesh = mesh.clone();
+                        outline_mesh.material = this.selected_mat;
+                        outline_mesh.renderOrder = 1;
+                        node_3d.outline_mesh = outline_mesh;
+                        this.add_to_group(mesh, outline_mesh);
+                        this.add_to_group(group, mesh);
+                    }
+                } else if (type == "joint") {
+                    let { mesh } = node_3d;
+                    if (!mesh) {
+                        mesh = this.joint_mesh.clone();
+                        node_3d.mesh = mesh;
+                        let outline_mesh = mesh.clone();
+                        outline_mesh.material = this.selected_mat;
+                        outline_mesh.renderOrder = 1;
+                        node_3d.outline_mesh = outline_mesh;
+                        this.add_to_group(mesh, outline_mesh);
+                        this.add_to_group(group, mesh);
+                    }
+                    let { size, rotstrength } = props;
+                    size = parseInt(size);
+                    let [r, g, b] = [1, rotstrength, rotstrength];
+                    mesh.material.color = new THREE.Color(r, g, b);
+                    mesh.scale = new THREE.Vector3(size, size, size);
+                }
+                this.node_3d_data[id] = node_3d;
+                let [z, x, y] = props.pos
+                    .toString()
+                    .split(",")
+                    .map((co) => parseFloat(co));
+                group.position = new THREE.Vector3(x, y, z);
+                if (props.rot) {
+                    [x, y, z] = props.rot
+                        .toString()
+                        .split(",")
+                        .map((co) => parseFloat(co));
+                    group.rotation.x = x;
+                    group.rotation.y = z;
+                    group.rotation.z = y;
+                }
+                group.updateMatrix();
+            });
+        },
+        handle_track_data() {
+            const selected_nodes = this.track_data.selected_nodes;
+            this.three.axis.detach();
+            Object.values(this.node_3d_data).forEach((node) => {
+                let { mesh, id, group, outline_mesh } = node;
+                if (selected_nodes.includes(id)) {
+                    this.three.axis.attach(group);
+                    if (!node.base_node.props.rot) {
+                        this.three.axis.setMode("translate");
+                    }
+                }
+                if (outline_mesh) {
+                    if (selected_nodes.includes(id)) {
+                        outline_mesh.visible = true;
+                    } else outline_mesh.visible = false;
+                }
+            });
+        },
+    },
+    computed: {
+        selected_node() {
+            if (this.track_data.selected_nodes.length == 0) return null;
+            return this.node_map[this.track_data.selected_nodes[0]];
         },
     },
     watch: {
-        loaded_files(file_array) {
-            this.handle_load_files();
+        loaded_files: {
+            handler: function () {
+                this.handle_load_files();
+            },
+            deep: true,
         },
-        selected_node(node) {
-            if (!node) return (this.select_box.material.opacity = 0);
-            let { sx, sy, sz } = node.model.size;
-            const sbg = new THREE.BoxGeometry(sx, sz, sy);
-            const sbwg = new THREE.WireframeGeometry(sbg);
-            this.select_box.geometry = sbwg;
-            this.select_box.position.x = sx / 2 - 0.5;
-            this.select_box.position.y = sz / 2 - 0.5;
-            this.select_box.position.z = sy / 2 - 0.5;
-            this.select_box.material.opacity = 0.5;
+        node_map: {
+            handler: function () {
+                this.handle_node_map();
+            },
+            deep: true,
+        },
+        track_data: {
+            handler: function () {
+                this.handle_track_data();
+            },
+            deep: true,
         },
     },
     mounted() {
-        let axisLines = [];
-
         // ----------- INIT RENDERER
 
         this.three.renderer = new WebGLRenderer({ antialias: true });
         this.three.renderer.setPixelRatio(window.devicePixelRatio);
         this.three.renderer.setSize(0, 0);
+        this.three.renderer.autoClear = false;
         document
             .getElementById("viewport")
             .appendChild(this.three.renderer.domElement);
-
         // ----------- INIT CAMERA
 
         this.three.camera = new PerspectiveCamera(60, 1, 1, 10000);
-        this.three.camera.position = new THREE.Vector3(
-            -195.68179576891197,
-            109.62629615344349,
-            147.78795155164678
-        );
+        this.three.camera.position = new THREE.Vector3(-43.49, 26.31, 33.2);
+
+        // ----------- POINTER EVENT
 
         var raycaster = new THREE.Raycaster();
         var mouse = new THREE.Vector2();
-        this.three.renderer.domElement.addEventListener("mouseup", (event) => {
-            if (event.button != 0) return;
-            event.preventDefault();
 
+        let setup_mouse_vector = (event) => {
+            event.preventDefault();
             mouse.x =
                 (event.clientX / this.three.renderer.domElement.clientWidth) *
                     2 -
@@ -175,12 +319,33 @@ export default {
                 -(event.clientY / this.three.renderer.domElement.clientHeight) *
                     2 +
                 1;
-
             raycaster.setFromCamera(mouse, this.three.camera);
+        };
 
-            var intersects = raycaster.intersectObjects(this.debug_meshes);
-            let node = intersects[0]?.object.node ?? null;
-            this.selected_node = node;
+        this.three.renderer.domElement.addEventListener("mouseup", (event) => {
+            if (event.button != 0) return;
+            if (this.three.axis.dragging) return;
+
+            setup_mouse_vector(event);
+
+            var intersects = raycaster.intersectObjects(
+                Object.values(this.node_3d_data)
+                    .filter((node_3d) => node_3d.mesh)
+                    .map((node_3d) => {
+                        let { mesh } = node_3d;
+                        mesh.node_id = node_3d.id;
+                        return mesh;
+                    })
+            );
+
+            while (this.track_data.selected_nodes.length > 0)
+                this.track_data.selected_nodes.splice(0, 1);
+
+            if (intersects.length > 0) {
+                this.track_data.selected_nodes.push(
+                    intersects[0].object.node_id
+                );
+            }
         });
 
         // ----------- INIT CONTROLS
@@ -268,6 +433,41 @@ export default {
         lightC.position.set(-1, 1, -1);
         this.three.scene.add(lightC);
 
+        // ----------- AXIS
+
+        this.three.axis = new THREE.TransformControls(
+            this.three.camera,
+            this.three.renderer.domElement
+        );
+        this.three.scene.add(this.three.axis);
+        this.three.axis.setTranslationSnap(1);
+        this.three.axis.space = "local";
+        window.axis = this.three.axis;
+        this.three.axis.addEventListener("objectChange", (evt) => {
+            let group = this.three.axis.object;
+            let node = this.three.axis.object.base_node;
+            let { x, y, z } = group.position;
+            node.props.pos = [z, x, y];
+            if (node.props) {
+                let { _x, _y, _z } = group.rotation;
+                node.props.rot = [_x, _z, _y];
+            }
+        });
+
+        // ----------- JOINT MESH
+
+        let ball_geo = new THREE.SphereGeometry(1, 4, 1);
+        let joint_center_geo = new THREE.SphereGeometry(0.1, 4, 1);
+        let joint_geo = new THREE.Geometry();
+        joint_geo.merge(ball_geo);
+        joint_geo.merge(joint_center_geo);
+        let joint_mat = new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            wireframe: true,
+            depthTest: false,
+        });
+        this.joint_mesh = new THREE.Mesh(joint_geo, joint_mat);
+
         // ----------- RENDER UPDATE
 
         let resize = () => {
@@ -285,14 +485,12 @@ export default {
         let animate = () => {
             window.requestAnimationFrame(() => {
                 animate();
-                this.three.renderer.render(this.three.scene, this.three.camera);
-                this.three.controls.update();
             });
+            this.three.renderer.render(this.three.scene, this.three.camera);
+            this.three.controls.update();
         };
 
         animate();
-
-        this.handle_load_files();
     },
 };
 </script>

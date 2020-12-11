@@ -71,8 +71,7 @@ export default {
             return this.templates.nodes[this.node.type];
         },
         display_buttons() {
-            if (!this.node || this.node.content == null) return {};
-            return this.action_buttons;
+            return this.action_buttons(this.node);
         },
         icon() {
             return `mdi-${this.node.icon}`;
