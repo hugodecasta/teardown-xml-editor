@@ -15,15 +15,27 @@
             </v-list-item-content>
         </v-list-item>
         <v-divider></v-divider>
-        <div class='pa-4'>
-            <v-file-input
-                label="Project XML"
-                prepend-icon=""
-                v-model='value.xml_file'
-            ></v-file-input>
-        </div>
+
         <template v-if='value.xml_file'>
+
+            <v-list-item>
+                <v-btn
+                    class='ma-3'
+                    :color="track_data.need_save ? 'primary' : 'none'"
+                    @click='save()'
+                >
+                    <v-icon>mdi-content-save</v-icon>
+                </v-btn>
+                <v-btn class='ma-3'>
+                    <v-icon>mdi-folder-open</v-icon>
+                </v-btn>
+                <v-btn class='ma-3'>
+                    <v-icon>mdi-file</v-icon>
+                </v-btn>
+            </v-list-item>
+
             <v-divider></v-divider>
+
             <v-list>
                 <node-tree
                     :node="value.nodes[0]"
@@ -32,6 +44,11 @@
                 </node-tree>
             </v-list>
         </template>
+        <v-file-input
+            class='pa-3'
+            v-else
+            v-model="value.xml_file"
+        ></v-file-input>
 
     </v-card>
 
@@ -39,7 +56,7 @@
 
 <script>
 export default {
-    props: ["value", "track_data", "add_node"],
+    props: ["value", "track_data", "add_node", "save"],
     components: load_vue_components(["node-tree"]),
 };
 </script>

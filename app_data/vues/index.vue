@@ -10,6 +10,7 @@
             app
             v-model="project_data"
             :track_data="track_data"
+            :save="save"
         ></project-panel>
         <props-panel
             app
@@ -46,11 +47,10 @@ export default {
                 icon: "cube",
                 props: {
                     name: "",
-                    "object name": "",
+                    object: "",
                     pos: [0, 0, 0],
-                    // rot: [0, 0, 0],
-                    "file name": "",
-                    prop: true,
+                    file: "",
+                    prop: "true",
                 },
             },
             joint: {
@@ -60,7 +60,7 @@ export default {
                     pos: [0, 0, 0],
                     rotstrength: 0,
                     size: 1,
-                    type: "",
+                    type: "ball",
                 },
             },
             group: {
@@ -77,6 +77,7 @@ export default {
         track_data: {
             selected_nodes: [],
             adding_node: null,
+            need_save: false,
         },
         node_map: {},
         // ----------------------------------------------- TRACK
@@ -103,12 +104,17 @@ export default {
             let file_node = this.add_file_to(file_path, this.selected_node);
             this.track_data.selected_nodes = [file_node.id];
         },
-        clone_node(node) {
+        clone_node(node, parent_id = node.parent_id) {
             let sub_node = this.create_node(node.type);
             sub_node.props = clone(node.props);
-            console.log(this.node_map[node.parent_id]);
-            this.add_node_to(sub_node, this.node_map[node.parent_id]);
+            this.add_node_to(sub_node, this.node_map[parent_id]);
+            if (node.content) {
+                sub_node.content = node.content.map((cont_node) =>
+                    this.clone_node(cont_node, sub_node.id)
+                );
+            }
             this.track_data.selected_nodes = [sub_node.id];
+            return sub_node;
         },
         add_file_to(file_path, parent) {
             let file_name = file_path.replace(/\\/g, "/").split("/").pop();
@@ -121,8 +127,8 @@ export default {
             Object.values(file_data.objects).map((object) => {
                 let sub_node = this.create_node("vox");
                 sub_node.props.name = object.name;
-                sub_node.props["object name"] = object.name;
-                sub_node.props["file name"] = file_name;
+                sub_node.props["object"] = object.name;
+                sub_node.props["file"] = file_name;
                 sub_node.props.pos = Object.values(object.position);
                 this.add_node_to(sub_node, file_node);
             });
@@ -231,6 +237,58 @@ export default {
             };
             return actions;
         },
+        save() {
+            this.track_data.need_save = false;
+            let node2xml = (node) => {
+                let props = clone(node.props);
+                for (let prop_name in props) {
+                    let value = props[prop_name];
+                    if (prop_name == "rot") {
+                        value =
+                            typeof value == "string"
+                                ? value.split(",").map((v) => parseFloat(v))
+                                : value;
+                        let [x, y, z] = value.map(
+                            (val) => (val / Math.PI) * 180 * 10
+                        );
+                        value = [y, z, -x];
+                    }
+                    if (prop_name == "pos") {
+                        let [x, y, z] = value;
+                        value = [x, z, -y];
+                    }
+                    if (typeof value == "number") {
+                        value = value / 10;
+                    }
+                    if (Array.isArray(value)) {
+                        value = value.map((nb) => nb / 10).join(" ");
+                    }
+                    if (prop_name == "file") value = "LEVEL/" + value;
+                    props[prop_name] = value;
+                }
+                let node_xml = {
+                    _name: node.type,
+                    _attrs: props,
+                };
+                if (node.content) {
+                    node_xml._content = node.content.map((sub_node) =>
+                        node2xml(sub_node)
+                    );
+                }
+                return node_xml;
+            };
+            const xml_data = base_xml(node2xml(this.project_data.nodes[0]));
+            const final_xml = toXML(xml_data, {
+                header: false,
+                indent: "   ",
+            });
+            console.log(xml_data);
+            fs.writeFileSync(
+                this.project_data.xml_file.path,
+                final_xml,
+                "utf8"
+            );
+        },
     },
     // --------------------------------------------------------------- WATCH
     watch: {
@@ -240,6 +298,12 @@ export default {
             } else {
                 this.load_file(file.path);
             }
+        },
+        node_map: {
+            handler() {
+                this.track_data.need_save = true;
+            },
+            deep: true,
         },
     },
     // --------------------------------------------------------------- COMPUTED
@@ -261,16 +325,16 @@ export default {
     // --------------------------------------------------------------- MOUNT
     mounted() {
         window.project_data = this.project_data;
-        this.import(
-            "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom.xml"
-        );
+        // this.import(
+        //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom.xml"
+        // );
         // setTimeout(() => {
         //     this.track_data.selected_nodes = [this.project_data.nodes[0].id];
         //     // this.put_file(
         //     //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\align.vox"
         //     // );
         //     this.put_file(
-        //         "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\test_door.vox"
+        //         "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\tars.vox"
         //     );
         // }, 0);
         // setTimeout(() => {

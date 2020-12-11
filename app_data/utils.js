@@ -43,6 +43,9 @@ const vox_reader = require('../tools/vox_reader')
 
 const uuid = require('uuid').v4
 
+const base_xml = require('../tools/base_xml')
+const { toXML } = require('jstoxml');
+
 function clone(obj) {
     return JSON.parse(JSON.stringify(obj))
 }

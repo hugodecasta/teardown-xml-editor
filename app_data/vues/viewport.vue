@@ -55,13 +55,14 @@ export default {
                 0.5,
             ];
             model.voxels.forEach((voxel) => {
-                let { x, y, z } = voxel;
-                let coord_arr = [x, y, z];
+                let { x, y, z, i } = voxel;
+                let coord_arr = [x, y, z, i];
                 let unfree_spaces = model.voxels
                     .map((other_voxel) => {
                         if (other_voxel == voxel) return [];
-                        let { x: ox, y: oy, z: oz } = other_voxel;
-                        let o_coord_arr = [ox, oy, oz];
+                        let { x: ox, y: oy, z: oz, i: oi } = other_voxel;
+                        // using oi to display if indexes are different
+                        let o_coord_arr = [ox, oy, oz, oi];
                         return o_coord_arr.map(
                             (co, index) => coord_arr[index] - co
                         );
@@ -78,7 +79,7 @@ export default {
                             );
                             return space_taken;
                         },
-                        [[], [], []]
+                        [[], [], [], []]
                     );
                 let free_space = [
                     [-1, 1],
@@ -193,8 +194,8 @@ export default {
                 if (type == "vox") {
                     let { mesh } = node_3d;
                     if (!mesh) {
-                        let object_name = props["object name"];
-                        let file_name = props["file name"];
+                        let object_name = props["object"];
+                        let file_name = props["file"];
                         let file_data = this.loaded_files[file_name];
                         let model_id = file_data.objects[object_name].model_id;
                         let model = file_data.models[model_id];
@@ -231,7 +232,9 @@ export default {
                     .toString()
                     .split(",")
                     .map((co) => parseFloat(co));
-                group.position = new THREE.Vector3(x, y, z);
+                group.position.x = x;
+                group.position.y = y;
+                group.position.z = z;
                 if (props.rot) {
                     [x, y, z] = props.rot
                         .toString()
@@ -302,7 +305,14 @@ export default {
         // ----------- INIT CAMERA
 
         this.three.camera = new PerspectiveCamera(60, 1, 1, 10000);
-        this.three.camera.position = new THREE.Vector3(-43.49, 26.31, 33.2);
+        let cam_start = {
+            x: -80.99731780423285,
+            y: 67.02465384631478,
+            z: 75.7811036311754,
+        };
+        this.three.camera.position = new THREE.Vector3(
+            ...Object.values(cam_start)
+        );
 
         // ----------- POINTER EVENT
 
@@ -393,12 +403,21 @@ export default {
         const positions = [];
         const colors = [];
 
-        let add_line = (x, y, x1, y1, linewidth = 1, color = 0x202020) => {
+        let add_line = (
+            x,
+            y,
+            z,
+            x1,
+            y1,
+            z1,
+            linewidth = 1,
+            color = 0x202020
+        ) => {
             let material = new THREE.LineMaterial({
                 color,
                 linewidth: linewidth / 1000,
             });
-            const points = [x, 0.1, y, x1, 0.1, y1];
+            const points = [x, z, y, x1, z1, y1];
             const geo = new THREE.LineGeometry().setPositions(points);
             const line = new THREE.Line2(geo, material);
             this.three.scene.add(line);
@@ -413,12 +432,12 @@ export default {
         plane.rotation.x = Math.PI / 2;
         this.three.scene.add(plane);
 
-        add_line(-plane_size / 2, 0, plane_size / 2, 0, 3);
-        add_line(0, -plane_size / 2, 0, plane_size / 2, 3);
+        add_line(-plane_size / 2, 0, 0.1, plane_size / 2, 0, 0.1, 3);
+        add_line(0, -plane_size / 2, 0, 0.1, plane_size / 2, 3, 0.1);
         for (let line_id = 0; line_id < grid_length; +line_id++) {
             let place = (line_id / (grid_length - 1)) * grid_size - grid_mid;
-            add_line(-grid_mid, place, grid_mid, place, 1);
-            add_line(place, -grid_mid, place, grid_mid, 1);
+            add_line(-grid_mid, place, 0.1, grid_mid, place, 0.1, 1);
+            add_line(place, -grid_mid, 0.1, place, grid_mid, 0.1, 1);
         }
 
         // ----------- LIGHTS
@@ -448,11 +467,18 @@ export default {
             let node = this.three.axis.object.base_node;
             let { x, y, z } = group.position;
             node.props.pos = [z, x, y];
-            if (node.props) {
+            if (node.props.rot) {
                 let { _x, _y, _z } = group.rotation;
                 node.props.rot = [_x, _z, _y];
             }
         });
+
+        window.cam = () => clone(this.three.camera.position);
+
+        // ----------- PERSONA MESH
+
+        add_line(0, 0, 0, 0, 0, 17, 3, 0xaaaaaa);
+        add_line(0, 0, 15, -3, 0, 15, 2, 0xaaaaaa);
 
         // ----------- JOINT MESH
 
