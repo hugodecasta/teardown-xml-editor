@@ -47,77 +47,7 @@ export default {
             });
         },
         create_model_base_mesh(model, mat_palette) {
-            let { sx, sy, sz } = model.size;
-            let model_geometry = new THREE.Geometry();
-            let offsets = [
-                0.5 - Math.trunc(sx / 2),
-                0.5 - Math.trunc(sz / 2),
-                0.5,
-            ];
-            model.voxels.forEach((voxel) => {
-                let { x, y, z, i } = voxel;
-                let coord_arr = [x, y, z, i];
-                let unfree_spaces = model.voxels
-                    .map((other_voxel) => {
-                        if (other_voxel == voxel) return [];
-                        let { x: ox, y: oy, z: oz, i: oi } = other_voxel;
-                        // using oi to display if indexes are different
-                        let o_coord_arr = [ox, oy, oz, oi];
-                        return o_coord_arr.map(
-                            (co, index) => coord_arr[index] - co
-                        );
-                    })
-                    .filter((e) => e)
-                    .filter(
-                        (vox_d) =>
-                            vox_d.reduce((a, b) => a + Math.abs(b), 0) == 1
-                    )
-                    .reduce(
-                        (space_taken, vox_d) => {
-                            vox_d.forEach((dif, index) =>
-                                space_taken[index].push(dif)
-                            );
-                            return space_taken;
-                        },
-                        [[], [], [], []]
-                    );
-                let free_space = [
-                    [-1, 1],
-                    [-1, 1],
-                    [-1, 1],
-                ].map((free, ax) =>
-                    free.filter((dir) => !unfree_spaces[ax].includes(dir))
-                );
-                let axes = Array.from("xyz");
-                let rotate_axes = Array.from("yxz");
-                let voxel_geo = free_space.map((ax_free_dirs, ax) => {
-                    let axe = axes[ax];
-                    let rotate_axe = rotate_axes[ax];
-                    let other_axes = axes.filter((ax) => ax != axe);
-
-                    ax_free_dirs.forEach((ax_dir) => {
-                        const geo = new THREE.PlaneGeometry(1, 1, 1);
-                        const plane = new THREE.Mesh(geo);
-                        plane.position[axe] = voxel[axe] - ax_dir / 2;
-                        other_axes.forEach(
-                            (oax, index) => (plane.position[oax] = voxel[oax])
-                        );
-                        plane.rotation[rotate_axe] = Math.PI / 2;
-                        plane.updateMatrix();
-                        plane.position.x += 0.5 - Math.trunc(sx / 2);
-                        plane.position.z += 0.5 - Math.trunc(sz / 2);
-                        plane.position.y += 0.5;
-                        plane.updateMatrix();
-
-                        model_geometry.merge(
-                            plane.geometry,
-                            plane.matrix,
-                            voxel.i - 1
-                        );
-                    });
-                });
-            });
-
+            let model_geometry = vox2mesh(model);
             let mode_base_mesh = new THREE.Mesh(model_geometry, mat_palette);
             return mode_base_mesh;
         },
@@ -460,6 +390,7 @@ export default {
         );
         this.three.scene.add(this.three.axis);
         this.three.axis.setTranslationSnap(1);
+        this.three.axis.setRotationSnap(Math.PI / 10);
         this.three.axis.space = "local";
         window.axis = this.three.axis;
         this.three.axis.addEventListener("objectChange", (evt) => {
@@ -468,8 +399,14 @@ export default {
             let { x, y, z } = group.position;
             node.props.pos = [z, x, y];
             if (node.props.rot) {
-                let { _x, _y, _z } = group.rotation;
-                node.props.rot = [_x, _z, _y];
+                let { x, y, z } = group.rotation;
+                if (x == z && Math.abs(x) == Math.PI) {
+                    x = 0;
+                    z = 0;
+                    y *= 2;
+                }
+                // console.log(rot);
+                node.props.rot = [x, z, y];
             }
         });
 

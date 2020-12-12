@@ -58,9 +58,10 @@ export default {
                 icon: "link",
                 props: {
                     pos: [0, 0, 0],
-                    rotstrength: 0,
-                    size: 1,
+                    rot: [0, 0, 0],
                     type: "ball",
+                    size: 1,
+                    rotstrength: 0,
                 },
             },
             group: {
@@ -325,18 +326,18 @@ export default {
     // --------------------------------------------------------------- MOUNT
     mounted() {
         window.project_data = this.project_data;
-        // this.import(
-        //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom.xml"
-        // );
-        // setTimeout(() => {
-        //     this.track_data.selected_nodes = [this.project_data.nodes[0].id];
-        //     // this.put_file(
-        //     //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\align.vox"
-        //     // );
-        //     this.put_file(
-        //         "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\tars.vox"
-        //     );
-        // }, 0);
+        this.import(
+            "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom.xml"
+        );
+        setTimeout(() => {
+            this.track_data.selected_nodes = [this.project_data.nodes[0].id];
+            // this.put_file(
+            //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\align.vox"
+            // );
+            this.put_file(
+                "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\tars.vox"
+            );
+        }, 0);
         // setTimeout(() => {
         //     let joint = this.create_node("joint");
         //     this.put_node(joint);
