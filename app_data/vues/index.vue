@@ -73,9 +73,17 @@ export default {
             },
             voxbox: {
                 icon: "cube-outline",
+                content: null,
                 props: {
                     pos: [-1000, 1000, -1],
                     size: [20000, 10, 20000],
+                },
+            },
+            script: {
+                icon: "language-lua",
+                content: null,
+                props: {
+                    file: "",
                 },
             },
             body: {
@@ -136,13 +144,20 @@ export default {
             this.track_data.selected_nodes = [sub_node.id];
             return sub_node;
         },
+        get_vox_file(file_name) {
+            if (!this.loaded_files[file_name]) {
+                Vue.set(
+                    this.loaded_files,
+                    file_name,
+                    this.load_vox_file(file_name)
+                );
+            }
+            return this.loaded_files[file_name];
+        },
         add_file_to(file_path, parent) {
             let file_name = file_path.replace(/\\/g, "/").split("/").pop();
-            let file_data =
-                this.loaded_files[file_name] ??
-                vox_reader(fs.readFileSync(file_path));
+            let file_data = this.get_vox_file(file_name);
             let file_node = this.create_node("group");
-            Vue.set(this.loaded_files, file_name, file_data);
             file_node.props.name = file_name;
             Object.values(file_data.objects).map((object) => {
                 let sub_node = this.create_node("vox");
@@ -191,24 +206,68 @@ export default {
             return vox_data;
         },
         load_file(path) {
-            let data = fs.readFileSync(path);
+            let xmldata = JSON.parse(XMLto(fs.readFileSync(path))).elements[0];
+            let scene_nodes = xmldata.elements;
+
+            console.log(scene_nodes);
+
             this.project_data.nodes = [];
 
             let body = this.create_node("body");
             this.node_map[body.id] = body;
             this.project_data.nodes.push(body);
 
-            let env = this.create_node("environment");
-            let box_body = this.create_node("body");
+            let parse_node = (xmlnode, true_parent) => {
+                let { name: type, elements, attributes } = xmlnode;
+                elements ||= [];
+                if (type == "vox") {
+                    let file_name = attributes.file.replace("LEVEL/", "");
+                    this.get_vox_file(file_name);
+                }
+                let true_node = this.create_node(type);
+                for (let attr_name in attributes) {
+                    let value = attributes[attr_name];
+                    if (["pos", "rot", "size"].includes(attr_name)) {
+                        value = value.split(" ").map((c) => parseFloat(c) * 10);
+                        if (attr_name == "pos") {
+                            let [x, y, z] = value;
+                            value = [x, -z, y];
+                        } else if (attr_name == "rot") {
+                            let [x, y, z] = value.map(
+                                (v) => (v / 10 / 180) * Math.PI
+                            );
+                            value = [x, z, y];
+                        }
+                    } else if (attr_name == "file") {
+                        value = value.replace("LEVEL/", "");
+                    }
+                    attributes[attr_name] = value;
+                    true_node.props[attr_name] = value;
+                }
+                this.add_node_to(true_node, true_parent);
+                elements.forEach((sub_node) => parse_node(sub_node, true_node));
+            };
 
-            this.add_node_to(env, body);
-            this.add_node_to(box_body, body);
+            scene_nodes.forEach((node) => parse_node(node, body));
 
-            let floor_box = this.create_node("voxbox");
-            this.add_node_to(floor_box, box_body);
+            // let env = this.create_node("environment");
+            // let box_body = this.create_node("body");
+
+            // this.add_node_to(env, body);
+            // this.add_node_to(box_body, body);
+
+            // let floor_box = this.create_node("voxbox");
+            // this.add_node_to(floor_box, box_body);
+
+            // let main_body = this.create_node("body");
+            // this.add_node_to(main_body, body);
+
+            // let main_script = this.create_node("script");
+            // main_script.props.file = "../../data/script/main.lua";
+            // this.add_node_to(main_script, body);
 
             this.track_data.selected_nodes = [];
-            this.track_data.selected_nodes.push(body.id);
+            // this.track_data.selected_nodes.push(main_body.id);
         },
         import(path) {
             let file = { path, data: null };
@@ -314,7 +373,6 @@ export default {
                 header: false,
                 indent: "   ",
             });
-            console.log(xml_data);
             fs.writeFileSync(
                 this.project_data.xml_file.path,
                 final_xml,
@@ -361,13 +419,13 @@ export default {
             "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom.xml"
         );
         setTimeout(() => {
-            this.track_data.selected_nodes = [this.project_data.nodes[0].id];
+            // this.track_data.selected_nodes = [this.project_data.nodes[0].id];
             // this.put_file(
             //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\align.vox"
             // );
-            this.put_file(
-                "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\tars.vox"
-            );
+            // this.put_file(
+            //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\tars.vox"
+            // );
             // this.put_file(
             //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\computer.vox"
             // );

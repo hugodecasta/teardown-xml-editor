@@ -45,6 +45,7 @@ const uuid = require('uuid').v4
 
 const base_xml = require('../tools/base_xml')
 const { toXML } = require('jstoxml');
+var XMLto = require('xml-js').xml2json;
 
 function clone(obj) {
     return JSON.parse(JSON.stringify(obj))

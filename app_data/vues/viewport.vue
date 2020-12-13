@@ -67,6 +67,7 @@ export default {
             return mode_base_mesh;
         },
         handle_load_files() {
+            console.log("NEW LOAD FILE");
             Object.values(this.loaded_files).forEach((file_data) => {
                 let { models, palette, mat_palette } = file_data;
                 if (!mat_palette) this.create_mat_palette(file_data);
@@ -222,6 +223,7 @@ export default {
     watch: {
         loaded_files: {
             handler: function () {
+                console.log("NEW LOADED FILE");
                 this.handle_load_files();
             },
             deep: true,
@@ -447,6 +449,7 @@ export default {
             depthTest: false,
         });
         this.joint_mesh = new THREE.Mesh(joint_geo, joint_mat);
+        this.joint_mesh.renderOrder = 1000;
 
         // ----------- RENDER UPDATE
 
@@ -471,6 +474,10 @@ export default {
         };
 
         animate();
+
+        this.handle_load_files();
+        this.handle_node_map();
+        this.handle_track_data();
     },
 };
 </script>
