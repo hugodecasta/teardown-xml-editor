@@ -71,7 +71,7 @@ let full_xml = [
                         _name: "voxbox",
                         _attrs: {
                             pos: "-100.0 -0.1 -100.0",
-                            size: "2000 1 2000"
+                            size: "20000 10 20000"
                         }
                     }
                 ]

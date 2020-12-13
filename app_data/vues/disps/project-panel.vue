@@ -38,10 +38,11 @@
 
             <v-list>
                 <node-tree
-                    :node="value.nodes[0]"
+                    v-for="sub_node in value.nodes[0].content"
+                    :key="sub_node.id"
+                    :node="sub_node"
                     :track_data="track_data"
-                >
-                </node-tree>
+                ></node-tree>
             </v-list>
         </template>
         <v-file-input

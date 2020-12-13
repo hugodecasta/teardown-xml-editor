@@ -156,7 +156,8 @@ function parse_value(type, data, ...params) {
 }
 
 module.exports = (file_data) => {
-    let vox_json = vox_to_json(parse_value('vox_file', Array.from(file_data)))
+    let vox_data = parse_value('vox_file', Array.from(file_data))
+    let vox_json = vox_to_json(vox_data)
     let { node_map, models } = vox_json
     vox_json.objects = {}
     Object.values(node_map).filter(node => node.node_type == 'nSHP').forEach(node => {

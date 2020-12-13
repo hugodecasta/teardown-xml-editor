@@ -64,6 +64,25 @@ export default {
                     rotstrength: 0,
                 },
             },
+            environment: {
+                content: null,
+                icon: "white-balance-sunny",
+                props: {
+                    template: "sunny",
+                },
+            },
+            voxbox: {
+                icon: "cube-outline",
+                props: {
+                    pos: [-1000, 1000, -1],
+                    size: [20000, 10, 20000],
+                },
+            },
+            body: {
+                content: [],
+                icon: "code-tags",
+                props: {},
+            },
             group: {
                 content: [],
                 icon: "checkbox-multiple-blank",
@@ -174,12 +193,22 @@ export default {
         load_file(path) {
             let data = fs.readFileSync(path);
             this.project_data.nodes = [];
-            let base_group = this.create_node("group");
-            base_group.props.name = this.project_name;
-            this.node_map[base_group.id] = base_group;
-            this.project_data.nodes.push(base_group);
+
+            let body = this.create_node("body");
+            this.node_map[body.id] = body;
+            this.project_data.nodes.push(body);
+
+            let env = this.create_node("environment");
+            let box_body = this.create_node("body");
+
+            this.add_node_to(env, body);
+            this.add_node_to(box_body, body);
+
+            let floor_box = this.create_node("voxbox");
+            this.add_node_to(floor_box, box_body);
+
             this.track_data.selected_nodes = [];
-            this.track_data.selected_nodes.push(base_group.id);
+            this.track_data.selected_nodes.push(body.id);
         },
         import(path) {
             let file = { path, data: null };
@@ -278,7 +307,9 @@ export default {
                 }
                 return node_xml;
             };
-            const xml_data = base_xml(node2xml(this.project_data.nodes[0]));
+            const xml_data = base_xml(
+                node2xml(this.project_data.nodes[0])._content
+            );
             const final_xml = toXML(xml_data, {
                 header: false,
                 indent: "   ",
@@ -337,6 +368,9 @@ export default {
             this.put_file(
                 "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\tars.vox"
             );
+            // this.put_file(
+            //     "G:\\steam_content\\steamapps\\common\\Teardown\\create\\custom\\computer.vox"
+            // );
         }, 0);
         // setTimeout(() => {
         //     let joint = this.create_node("joint");

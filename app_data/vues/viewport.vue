@@ -38,13 +38,28 @@ export default {
                 opacity: 0.5,
                 side: THREE.DoubleSide,
             });
-            file_data.mat_palette = file_data.palette.map(({ r, g, b }) => {
-                return new THREE.MeshPhongMaterial({
-                    color: this.create_color(r, g, b),
-                    depthTest: true,
-                    side: THREE.DoubleSide,
-                });
-            });
+            file_data.mat_palette = file_data.palette.map(
+                ({ r, g, b, mat }) => {
+                    let color = this.create_color(r, g, b);
+                    let material = new THREE.MeshLambertMaterial({
+                        color,
+                        depthTest: true,
+                        side: THREE.DoubleSide,
+                    });
+                    if (mat._type == "_glass") {
+                        material.transparent = true;
+                        material.opacity = 0.5;
+                    }
+                    if (mat._type == "_emit") {
+                        material = new THREE.MeshBasicMaterial({
+                            color,
+                            depthTest: true,
+                            side: THREE.DoubleSide,
+                        });
+                    }
+                    return material;
+                }
+            );
         },
         create_model_base_mesh(model, mat_palette) {
             let model_geometry = vox2mesh(model);
@@ -158,13 +173,15 @@ export default {
                     mesh.scale = new THREE.Vector3(size, size, size);
                 }
                 this.node_3d_data[id] = node_3d;
-                let [z, x, y] = props.pos
-                    .toString()
-                    .split(",")
-                    .map((co) => parseFloat(co));
-                group.position.x = x;
-                group.position.y = y;
-                group.position.z = z;
+                if (props.pos) {
+                    let [z, x, y] = props.pos
+                        .toString()
+                        .split(",")
+                        .map((co) => parseFloat(co));
+                    group.position.x = x;
+                    group.position.y = y;
+                    group.position.z = z;
+                }
                 if (props.rot) {
                     [x, y, z] = props.rot
                         .toString()

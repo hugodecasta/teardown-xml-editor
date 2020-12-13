@@ -36,6 +36,10 @@ function vox_to_json(raw_file_content) {
 
     // ---- PALETTE
     let palette = chunks.filter(c => c.chunk_id == 'RGBA')[0].content
+    console.log(palette.length)
+    chunks.filter(c => c.chunk_id == 'MATL')
+        .map(({ content: { mat_props, material_id } }) => ({ i: material_id, props: mat_props }))
+        .forEach(mat => palette[mat.i - 1].mat = mat.props)
 
     // ---- MODELS
     let models = chunks.filter(c => ['SIZE', 'XYZI']).reduce((models, chunk) => {
